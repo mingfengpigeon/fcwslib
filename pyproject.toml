@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fcwslib"
+version = "1.0.0"
+description = "A library that makes development of Python Minecraft Bedrock Edition websocket applications easier."
+readme = "README.md"
+requires-python = ">=3.7"
+license = { file = "LICENSE" }
+authors = [
+    { name = "mingfengpigeon", email = "mingfengpigeon@gmail.org" },
+]
+keywords = ["python", "minecraft", "bedrock", "websocket"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python"
+]
+dependencies = [
+    "websockets",
+]
+
+[project.urls]
+homepage = "https://github.com/mingfengpigeon/fcwslib"
+repository = "https://github.com/mingfengpigeon/fcwslib"
