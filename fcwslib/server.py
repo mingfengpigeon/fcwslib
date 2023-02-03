@@ -1,5 +1,5 @@
-__all__ = ['Server', 'Handler', 'build_header']
-__version__ = '1.0.0'
+__all__ = ['Server', 'Plugin', 'build_header']
+__version__ = '2.0.0'
 __author__ = 'mingfengpigeon <mingfengpigeon@gmail.com>'
 
 import asyncio
@@ -14,14 +14,19 @@ class Server:
     def __init__(self, server: str = '0.0.0.0', port: int = 8000, debug_mode: bool = False) -> None:
         self._server = server
         self._port = port
-        self._handler = None
         self._debug_mode = debug_mode
+        self._plugins = []
+        self._sent_commands = {}
+        self._subscribed_events = {}
 
-    def handler(self):
-        return copy.deepcopy(self._handler)
+    def handler(self) -> list:
+        return copy.deepcopy(self._plugins)
 
-    def set_handler(self, handler) -> None:
-        self._handler = handler
+    def add_plugin(self, plugin) -> None:
+        self._plugins.append(plugin)
+
+    def remove_plugin(self, plugin) -> None:
+        self._plugins.remove(plugin)
 
     def run_forever(self) -> None:
         asyncio.run(self._run_forever())
@@ -31,26 +36,20 @@ class Server:
             await asyncio.Future()
 
     async def _on_connect(self, websocket, path) -> None:
-        if self._handler:
-            handler = self._handler(websocket, path)
-            await handler.run_forever()
-
-
-class Handler:
-    def __init__(self, websocket, path, debug_mode: bool = False) -> None:
-        self._websocket = websocket
-        self._path = path
-        self._sent_commands = {}
-        self._subscribed_events = {}
-        self._debug_mode = debug_mode
-
-    async def run_forever(self) -> None:
-        asyncio.create_task(self.on_connect())
+        plugins = []
+        for plugin in self._plugins:
+            plugins.append(plugin(websocket, path, self._sent_commands, self._subscribed_events, self._debug_mode))
+        for plugin in plugins:
+            asyncio.create_task(plugin.on_connect())
         while True:
             try:
-                response = await self._websocket.recv()
-            except (websockets.exceptions.ConnectionClosedOK, websockets.exceptions.ConnectionClosedOK):
-                await self.on_disconnect()
+                response = await websocket.recv()
+            except (websockets.exceptions.ConnectionClosedOK, websockets.exceptions.ConnectionClosedError):
+                tasks = []
+                for plugin in plugins:
+                    tasks.append(plugin.on_disconnect())
+                for task in tasks:
+                    await task
                 break
             else:
                 response = json.loads(response)
@@ -60,11 +59,18 @@ class Handler:
                     if request_id in self._sent_commands:
                         asyncio.create_task(self._sent_commands[request_id](response))
                         del self._sent_commands[request_id]
-                elif message_purpose == 'event':
+                else:
                     event_name = response['header']['eventName']
                     asyncio.create_task(self._subscribed_events[event_name](response))
-                else:
-                    asyncio.create_task(self.on_receive(response))
+
+
+class Plugin:
+    def __init__(self, websocket, path, sent_commands: dict, subscribed_events: dict, debug_mode: bool = False) -> None:
+        self._websocket = websocket
+        self._path = path
+        self._sent_commands = sent_commands
+        self._subscribed_events = subscribed_events
+        self._debug_mode = debug_mode
 
     async def on_connect(self) -> None:
         pass

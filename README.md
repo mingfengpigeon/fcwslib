@@ -1,7 +1,16 @@
-__all__ = []
-__version__ = '2.0.0'
-__author__ = 'mingfengpigeon <mingfengpigeon@gmail.com>'
+# Introduction
 
+A library that makes development of Python Minecraft Bedrock Edition websocket applications easier.
+
+# Install
+
+```bash
+pip install fcwslib
+```
+
+# Demo
+
+```python
 import fcwslib
 
 
@@ -32,3 +41,5 @@ def main() -> None:
 
 if __name__ == '__main__':
     main()
+
+```
