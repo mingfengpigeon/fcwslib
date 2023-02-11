@@ -1,6 +1,8 @@
 __all__ = []
-__version__ = '2.0.0'
+__version__ = '2.1.0'
 __author__ = 'mingfengpigeon <mingfengpigeon@gmail.com>'
+
+import asyncio
 
 import fcwslib
 
@@ -24,11 +26,12 @@ class Plugin(fcwslib.Plugin):
         print('Receive event response {}'.format(response))
 
 
-def main() -> None:
-    server = fcwslib.Server()
+async def main() -> None:
+    server = fcwslib.Server(debug_mode=True)
     server.add_plugin(Plugin)
-    server.run_forever()
+    task = asyncio.create_task(server.run_forever())
+    await task
 
 
 if __name__ == '__main__':
-    main()
+    asyncio.run(main())
